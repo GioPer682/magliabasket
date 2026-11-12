@@ -394,7 +394,7 @@
             </div>
             <div class="w-full mt-2 pt-2 border-t border-slate-100">
               <span class="inline-block w-full py-1 px-2 rounded-lg bg-asa-navy/5 group-hover:bg-asa-red text-asa-navy group-hover:text-white text-xs font-bold transition">
-                Scegli #${item.numero}
+                Scegli ${item.numero}
               </span>
             </div>
           `;
@@ -452,7 +452,7 @@
         await updateDoc(doc(db, "jerseys_scoiattoli_big", String(selectedNumberForBooking)), {
           booked: true, atleta: playerName, timestamp: new Date().toISOString()
         });
-        showToast(`Numero #${selectedNumberForBooking} prenotato per ${playerName}!`);
+        showToast(`Numero ${selectedNumberForBooking} prenotato per ${playerName}!`);
         closeBookingModal();
       } catch (err) {
         showToast("Errore durante la prenotazione", "error");
@@ -482,7 +482,7 @@
       bookedItems.forEach(item => {
         const row = document.createElement('div');
         row.className = "flex justify-between items-center p-3";
-        row.innerHTML = `<span class="font-bold">#${item.numero} - ${item.atleta}</span><button onclick="releaseJersey('${item.id}')" class="text-red-600 font-bold text-xs underline cursor-pointer">Sblocca</button>`;
+        row.innerHTML = `<span class="font-bold">${item.numero} - ${item.atleta}</span><button onclick="releaseJersey('${item.id}')" class="text-red-600 font-bold text-xs underline cursor-pointer">Sblocca</button>`;
         list.appendChild(row);
       });
     }
