@@ -130,7 +130,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2 overflow-x-auto pb-1 pt-1 border-t border-slate-100">
-        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1"><i class="fa-solid fa-layer-group text-asa-navy mr-1"></i>Decine:</span>
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1"><i class="fa-solid fa-layer-group text-asa-navy mr-1"></i>Decina:</span>
         <div id="decade-filters" class="flex items-center gap-1.5 shrink-0">
           <button data-decade="all" class="decade-btn active px-2.5 py-1 rounded-lg text-xs font-bold bg-asa-red text-white shadow-sm transition cursor-pointer">Tutte</button>
           <button data-decade="0-9" class="decade-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition cursor-pointer">0–9</button>
@@ -264,9 +264,11 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
+    // Nuova lista ufficiale aggiornata (55 numeri)
     const OFFICIAL_NUMBERS = [
-      0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 20, 21, 23, 24, 25, 28, 29, 30, 31, 32, 
-      34, 36, 38, 42, 51, 53, 57, 58, 60, 61, 62, 65, 69, 72, 73, 76, 77, 79, 81, 82, 83, 84, 85, 87, 88, 94, 95, 97, 99
+      0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 20, 21, 23, 24, 
+      25, 28, 29, 30, 31, 32, 34, 36, 38, 42, 51, 53, 57, 58, 60, 61, 62, 65, 
+      69, 72, 73, 76, 77, 79, 81, 82, 83, 84, 85, 87, 88, 94, 95, 97, 99
     ];
 
     let jerseysData = [];
@@ -323,6 +325,9 @@
       grid.innerHTML = '';
 
       const filtered = jerseysData.filter(item => {
+        // Filtra in base alla nuova lista ufficiale dei numeri ammessi
+        if (!OFFICIAL_NUMBERS.includes(Number(item.numero))) return false;
+
         if (currentFilter === 'available' && item.booked) return false;
         if (currentFilter === 'booked' && !item.booked) return false;
         if (currentDecade !== 'all') {
@@ -474,7 +479,7 @@
 
     function renderAdminDashboard() {
       const list = document.getElementById('admin-bookings-list');
-      const bookedItems = jerseysData.filter(i => i.booked);
+      const bookedItems = jerseysData.filter(i => i.booked && OFFICIAL_NUMBERS.includes(Number(i.numero)));
       document.getElementById('admin-booked-count').innerText = bookedItems.length;
       list.innerHTML = bookedItems.length === 0 ? '<div class="p-4 text-center text-sm text-slate-500">Nessuna prenotazione</div>' : '';
       bookedItems.forEach(item => {
@@ -493,7 +498,7 @@
     };
 
     function updateWhatsAppExportText() {
-      const bookedItems = jerseysData.filter(i => i.booked).sort((a,b) => a.numero - b.numero);
+      const bookedItems = jerseysData.filter(i => i.booked && OFFICIAL_NUMBERS.includes(Number(i.numero))).sort((a,b) => a.numero - b.numero);
       let text = "🏀 *ASA BASKET CINISELLO - SCOIATTOLI BIG*\n*Riepilogo Maglie Ufficiali*\n\n";
       bookedItems.forEach(i => text += `• N. *${i.numero}* ➔ *${i.atleta}*\n`);
       document.getElementById('export-whatsapp-text').value = text;
