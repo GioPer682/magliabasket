@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASA Basket Cinisello - Minibasket | Prenotazione Maglie</title>
+  <title>ASA Basket Cinisello - Minibasket | Prenotazione Numero Kit Gara</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts -->
@@ -117,7 +117,7 @@
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live
                 </span>
               </div>
-              <p class="text-slate-200 text-xs sm:text-sm mt-1 font-medium">Scoiattoli BIG & Aquilotti • Prenotazione Ufficiale Numeri di Maglia</p>
+              <p class="text-slate-200 text-xs sm:text-sm mt-1 font-medium">Scoiattoli BIG & Aquilotti • Prenotazione Ufficiale Numeri di Maglia Kit Gara</p>
             </div>
           </div>
 
@@ -154,7 +154,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2 overflow-x-auto pb-1 pt-1 border-t border-slate-100">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1"><i class="fa-solid fa-layer-group text-asa-navy mr-1"></i>Decina:</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1"><i class="fa-solid fa-layer-group text-asa-navy mr-1"></i>Decine:</span>
           <div id="decade-filters" class="flex items-center gap-1.5 shrink-0">
             <button data-decade="all" class="decade-btn active px-2.5 py-1 rounded-lg text-xs font-bold bg-asa-red text-white shadow-sm transition cursor-pointer">Tutte</button>
             <button data-decade="0-9" class="decade-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition cursor-pointer">0–9</button>
@@ -190,7 +190,7 @@
     <footer class="bg-asa-navy text-slate-300 border-t-2 border-asa-red py-5 mt-auto">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
         <p class="font-semibold text-white">ASA Basket Cinisello • Settore Minibasket</p>
-        <p>Sistema unificato di prenotazione numeri di maglia</p>
+        <p>Sistema unificato di prenotazione numeri di maglia Kit Gara</p>
       </div>
     </footer>
 
@@ -444,7 +444,6 @@
             <div class="w-full mt-2 pt-2 border-t border-slate-200">
               <span class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${badgeColor} mb-1">${item.categoria || 'Minibasket'}</span>
               <div class="text-xs font-extrabold text-asa-navy truncate px-1">${item.atleta}</div>
-              <div class="text-[10px] font-semibold text-slate-400 mt-0.5"><span class="text-red-600 font-bold hover:underline cursor-pointer" onclick="openAdminWithPin()">Gestisci</span></div>
             </div>
           `;
         } else {
@@ -619,7 +618,6 @@
       document.getElementById('export-whatsapp-text').value = text;
     }
 
-    // --- ESPORTAZIONE EXCEL (CSV con Categoria) ---
     document.getElementById('download-excel-btn').onclick = () => {
       const bookedItems = jerseysData.filter(i => i.booked && OFFICIAL_NUMBERS.includes(Number(i.numero))).sort((a,b) => a.numero - b.numero);
       
