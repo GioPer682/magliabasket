@@ -6,6 +6,8 @@
   <title>ASA Basket Cinisello - Scoiattoli BIG | Prenotazione Maglie</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS (XLSX Export Library) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -69,7 +71,7 @@
     </div>
   </div>
 
-  <!-- Contenuto Principale del Sito (Inizialmente nascosto finché non si inserisce la password) -->
+  <!-- Contenuto Principale del Sito -->
   <div id="main-app-content" class="hidden flex-1 flex flex-col">
 
     <!-- Toast Notifiche -->
@@ -247,7 +249,6 @@
         <div id="admin-pin-screen" class="p-8 flex flex-col items-center justify-center text-center">
           <h4 class="text-xl font-bold text-asa-navy mb-2">Accesso Riservato</h4>
           <form id="admin-pin-form" class="mt-3 w-full max-w-xs space-y-3">
-            <!-- PIN AGGIORNATO A Cinix2026 -->
             <input type="password" id="admin-pin-input" placeholder="PIN Dirigente" class="w-full text-center tracking-widest text-lg font-bold px-4 py-3 rounded-xl border" required />
             <button type="submit" class="w-full py-3 rounded-xl bg-asa-navy text-white font-semibold text-sm cursor-pointer">Sblocca</button>
           </form>
@@ -255,15 +256,29 @@
         <div id="admin-dashboard-screen" class="hidden flex-1 flex flex-col overflow-hidden">
           <div class="flex border-b bg-slate-50 px-6 pt-3 gap-2">
             <button data-tab="bookings" class="admin-tab-btn active px-4 py-2.5 text-sm font-semibold border-b-2 border-asa-red text-asa-red cursor-pointer">Prenotazioni (<span id="admin-booked-count">0</span>)</button>
-            <button data-tab="export" class="admin-tab-btn px-4 py-2.5 text-sm font-medium text-slate-600 cursor-pointer">Esporta WhatsApp</button>
+            <button data-tab="export" class="admin-tab-btn px-4 py-2.5 text-sm font-medium text-slate-600 cursor-pointer">Esporta Excel / WhatsApp</button>
           </div>
           <div class="p-6 overflow-y-auto flex-1">
             <div id="tab-bookings" class="admin-tab-content space-y-4">
               <div id="admin-bookings-list" class="divide-y border rounded-xl overflow-hidden"></div>
             </div>
-            <div id="tab-export" class="admin-tab-content hidden space-y-3">
-              <textarea id="export-whatsapp-text" rows="8" readonly class="w-full p-3 bg-slate-50 border rounded-xl text-xs font-mono"></textarea>
-              <button id="copy-whatsapp-btn" class="px-4 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl cursor-pointer">Copia Testo</button>
+            <div id="tab-export" class="admin-tab-content hidden space-y-4">
+              <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between">
+                <div>
+                  <h5 class="font-bold text-emerald-900 text-sm">Scarica Tabella in Excel (.xlsx)</h5>
+                  <p class="text-xs text-emerald-700 mt-0.5">Scarica l'elenco completo delle prenotazioni in un file formattato.</p>
+                </div>
+                <button id="download-excel-btn" class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer shrink-0">
+                  <i class="fa-solid fa-file-excel text-lg"></i>
+                  <span>Scarica Excel</span>
+                </button>
+              </div>
+
+              <div class="border-t pt-4 space-y-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Testo alternativo per WhatsApp:</label>
+                <textarea id="export-whatsapp-text" rows="5" readonly class="w-full p-3 bg-slate-50 border rounded-xl text-xs font-mono"></textarea>
+                <button id="copy-whatsapp-btn" class="px-4 py-2.5 bg-slate-800 text-white text-xs font-semibold rounded-xl cursor-pointer">Copia Testo WhatsApp</button>
+              </div>
             </div>
           </div>
         </div>
@@ -278,8 +293,6 @@
     import { getFirestore, collection, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // --- GESTIONE PASSWORD ACCESSO SITO (GRUPPO WHATSAPP) ---
-    // Puoi cambiare qui sotto la password che darai ai genitori (es. "scoiattolibold2026")
     const GROUP_PASSWORD = "asabasket2026"; 
 
     const siteLockScreen = document.getElementById('site-lock-screen');
@@ -288,7 +301,6 @@
     const sitePasswordInput = document.getElementById('site-password-input');
     const sitePasswordError = document.getElementById('site-password-error');
 
-    // Controlla se il genitore ha già fatto il login in questa sessione del browser
     if (sessionStorage.getItem('asa_site_authenticated') === 'true') {
       siteLockScreen.classList.add('hidden');
       mainAppContent.classList.remove('hidden');
@@ -306,7 +318,6 @@
       }
     });
 
-    // --- CONFIGURAZIONE FIREBASE ---
     const firebaseConfig = {
       apiKey: "AIzaSyA3hTJSqYW6NsfChEQehspRE3gTr-FczxU",
       authDomain: "assegnazionemaglieasa.firebaseapp.com",
@@ -489,6 +500,11 @@
     });
 
     window.openBookingModal = function(num) {
+      if (localStorage.getItem('asa_user_booked_jersey')) {
+        showToast("Hai già prenotato una maglia da questo dispositivo!", "error");
+        return;
+      }
+
       selectedNumberForBooking = num;
       document.getElementById('modal-jersey-preview-num').innerText = num;
       document.getElementById('player-name-input').value = '';
@@ -506,12 +522,22 @@
 
     document.getElementById('booking-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      if (localStorage.getItem('asa_user_booked_jersey')) {
+        showToast("Impossibile procedere: è già registrata una maglia per questo dispositivo.", "error");
+        closeBookingModal();
+        return;
+      }
+
       const playerName = document.getElementById('player-name-input').value.trim();
       if (!playerName) return;
       try {
         await updateDoc(doc(db, "jerseys_scoiattoli_big", String(selectedNumberForBooking)), {
           booked: true, atleta: playerName, timestamp: new Date().toISOString()
         });
+        
+        localStorage.setItem('asa_user_booked_jersey', String(selectedNumberForBooking));
+
         showToast(`Numero ${selectedNumberForBooking} prenotato per ${playerName}!`);
         closeBookingModal();
       } catch (err) {
@@ -523,7 +549,6 @@
     document.getElementById('btn-open-admin').onclick = () => { adminModal.classList.remove('hidden'); adminModal.classList.add('flex'); };
     document.getElementById('close-admin-modal').onclick = () => { adminModal.classList.add('hidden'); adminModal.classList.remove('flex'); };
 
-    // --- PIN DIRIGENTE AGGIORNATO A Cinix2026 ---
     document.getElementById('admin-pin-form').addEventListener('submit', (e) => {
       e.preventDefault();
       if (document.getElementById('admin-pin-input').value === "Cinix2026") {
@@ -551,6 +576,7 @@
     window.releaseJersey = async function(id) {
       if (!confirm("Vuoi sbloccare questo numero?")) return;
       await updateDoc(doc(db, "jerseys_scoiattoli_big", id), { booked: false, atleta: "", timestamp: null });
+      localStorage.removeItem('asa_user_booked_jersey');
       showToast("Numero sbloccato");
       renderAdminDashboard();
     };
@@ -561,6 +587,33 @@
       bookedItems.forEach(i => text += `• N. *${i.numero}* ➔ *${i.atleta}*\n`);
       document.getElementById('export-whatsapp-text').value = text;
     }
+
+    // --- ESPORTAZIONE EXCEL (XLSX) ---
+    document.getElementById('download-excel-btn').onclick = () => {
+      const bookedItems = jerseysData.filter(i => i.booked && OFFICIAL_NUMBERS.includes(Number(i.numero))).sort((a,b) => a.numero - b.numero);
+      
+      if (bookedItems.length === 0) {
+        showToast("Nessuna prenotazione da esportare", "error");
+        return;
+      }
+
+      // Prepara i dati per il foglio Excel
+      const excelData = bookedItems.map((item, index) => ({
+        "N.": index + 1,
+        "Numero Maglia": item.numero,
+        "Nome Atleta": item.atleta,
+        "Data Prenotazione": item.timestamp ? new Date(item.timestamp).toLocaleString('it-IT') : "N/D"
+      }));
+
+      // Crea il Workbook e il Worksheet
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Scoiattoli BIG - Maglie");
+
+      // Scarica il file
+      XLSX.writeFile(workbook, "Scoiattoli_BIG_Numeri_Maglia.xlsx");
+      showToast("File Excel scaricato con successo!");
+    };
 
     document.getElementById('copy-whatsapp-btn').onclick = () => {
       navigator.clipboard.writeText(document.getElementById('export-whatsapp-text').value);
