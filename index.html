@@ -213,10 +213,10 @@
                 <path d="M 46,8 C 48,20 72,20 74,8" fill="none" stroke="#13294B" stroke-width="4"/>
                 <path d="M 88,8 L 96,42 C 92,48 92,58 96,64" fill="none" stroke="#D71920" stroke-width="3.5"/>
                 <path d="M 32,8 L 24,42 C 28,48 28,58 24,64" fill="none" stroke="#13294B" stroke-width="3.5"/>
-                <!-- Scritta CINIX sul petto -->
-                <text x="60" y="32" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="9" letter-spacing="1.5" fill="#13294B">CINIX</text>
+                <!-- CINIX in basso -->
+                <text x="60" y="122" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="8.5" letter-spacing="1.5" fill="#13294B">CINIX</text>
               </svg>
-              <div class="absolute inset-0 flex flex-col items-center justify-center pt-2.5">
+              <div class="absolute inset-0 flex flex-col items-center justify-center pb-2">
                 <span id="modal-jersey-preview-num" class="font-sport font-extrabold text-[26px] text-asa-red tracking-tight leading-none drop-shadow-sm">23</span>
               </div>
             </div>
@@ -234,8 +234,9 @@
               </select>
             </div>
             <div>
-              <label class="block text-sm font-bold text-asa-navy mb-1.5">Nome e Cognome dell'Atleta *</label>
+              <label class="block text-sm font-bold text-asa-navy mb-1.5">Cognome e Nome dell'Atleta *</label>
               <input type="text" id="player-name-input" required maxlength="32" placeholder="Es. Leonardo Bianchi" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-asa-red text-sm" />
+              <p class="text-[11px] text-slate-400 mt-1">Sulla maglia verrà stampato automaticamente solo il cognome.</p>
             </div>
           </div>
           <div class="mt-6 flex items-center gap-3">
@@ -350,6 +351,12 @@
     let searchQuery = '';
     let selectedNumberForBooking = null;
 
+    function extractSurname(fullName) {
+      if (!fullName) return '';
+      const parts = fullName.trim().split(/\s+/);
+      return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    }
+
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
@@ -377,7 +384,7 @@
 
     async function seedDatabase(colRef) {
       for (let num of OFFICIAL_NUMBERS) {
-        await setDoc(doc(colRef, String(num)), { numero: num, booked: false, atleta: "", categoria: "", timestamp: null });
+        await setDoc(doc(colRef, String(num)), { numero: num, booked: false, atleta: "", cognomeStampa: "", categoria: "", timestamp: null });
       }
     }
 
@@ -427,7 +434,7 @@
         const card = document.createElement('div');
         if (item.booked) {
           const badgeColor = item.categoria === 'Aquilotti' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800';
-          const athleteNameUpper = (item.atleta || '').toUpperCase();
+          const surnameToPrint = (item.cognomeStampa || extractSurname(item.atleta)).toUpperCase();
           card.className = "jersey-card booked bg-slate-100 border border-slate-300 rounded-2xl p-4 flex flex-col items-center text-center relative overflow-hidden";
           card.innerHTML = `
             <div class="w-full flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
@@ -441,8 +448,8 @@
                 <path d="M 96,64 L 88,64 L 92,132 L 98,132 Z" fill="#94a3b8"/>
                 <path d="M 46,8 C 48,20 72,20 74,8" fill="none" stroke="#64748b" stroke-width="4"/>
                 
-                <!-- COGNOME ATLETA SOPRA IL NUMERO -->
-                <text x="60" y="52" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="9" fill="#1e293b" textLength="${Math.min(athleteNameUpper.length * 5.5, 48)}" lengthAdjust="spacingAndGlyphs">${athleteNameUpper}</text>
+                <!-- SOLO COGNOME ATLETA SOPRA IL NUMERO -->
+                <text x="60" y="52" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="9" fill="#1e293b" textLength="${Math.min(surnameToPrint.length * 5.5, 48)}" lengthAdjust="spacingAndGlyphs">${surnameToPrint}</text>
                 
                 <!-- CINIX IN BASSO SUL BORDO -->
                 <text x="60" y="122" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="8.5" letter-spacing="1.5" fill="#475569">CINIX</text>
@@ -553,9 +560,15 @@
       const playerName = document.getElementById('player-name-input').value.trim();
       if (!teamCategory || !playerName) return;
 
+      const surnameToPrint = extractSurname(playerName).toUpperCase();
+
       try {
         await updateDoc(doc(db, "jerseys_scoiattoli_big", String(selectedNumberForBooking)), {
-          booked: true, atleta: playerName, categoria: teamCategory, timestamp: new Date().toISOString()
+          booked: true, 
+          atleta: playerName, 
+          cognomeStampa: surnameToPrint,
+          categoria: teamCategory, 
+          timestamp: new Date().toISOString()
         });
         
         localStorage.setItem('asa_user_booked_jersey', String(selectedNumberForBooking));
@@ -617,7 +630,7 @@
 
     window.releaseJersey = async function(id) {
       if (!confirm("Vuoi sbloccare questo numero?")) return;
-      await updateDoc(doc(db, "jerseys_scoiattoli_big", id), { booked: false, atleta: "", categoria: "", timestamp: null });
+      await updateDoc(doc(db, "jerseys_scoiattoli_big", id), { booked: false, atleta: "", cognomeStampa: "", categoria: "", timestamp: null });
       localStorage.removeItem('asa_user_booked_jersey');
       showToast("Numero sbloccato");
       renderAdminDashboard();
@@ -638,10 +651,11 @@
         return;
       }
 
-      let csvContent = "\uFEFFN.;Categoria;Numero Maglia;Atleta;Data Prenotazione\n";
+      let csvContent = "\uFEFFN.;Categoria;Numero Maglia;Atleta;Cognome Stampa;Data Prenotazione\n";
       bookedItems.forEach((item, index) => {
         const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString('it-IT') : "N/D";
-        csvContent += `${index + 1};"${item.categoria || 'N/D'}";${item.numero};"${item.atleta}";"${dateStr}"\n`;
+        const surname = (item.cognomeStampa || extractSurname(item.atleta)).toUpperCase();
+        csvContent += `${index + 1};"${item.categoria || 'N/D'}";${item.numero};"${item.atleta}";"${surname}";"${dateStr}"\n`;
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
