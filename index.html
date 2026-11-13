@@ -357,6 +357,12 @@
       return parts.length > 1 ? parts[parts.length - 1] : parts[0];
     }
 
+    // Normalizza la categoria nel caso ci siano record salvati con la vecchia dicitura "Aquilotti"
+    function normalizeCategory(cat) {
+      if (cat === 'Aquilotti') return 'Aquilotti SMALL';
+      return cat || 'Minibasket';
+    }
+
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
@@ -418,7 +424,8 @@
         }
         if (searchQuery.trim() !== '') {
           const q = searchQuery.toLowerCase();
-          if (!String(item.numero).includes(q) && !(item.atleta || '').toLowerCase().includes(q) && !(item.categoria || '').toLowerCase().includes(q)) return false;
+          const displayCat = normalizeCategory(item.categoria).toLowerCase();
+          if (!String(item.numero).includes(q) && !(item.atleta || '').toLowerCase().includes(q) && !displayCat.includes(q)) return false;
         }
         return true;
       });
@@ -433,8 +440,9 @@
       filtered.forEach(item => {
         const card = document.createElement('div');
         if (item.booked) {
+          const displayCat = normalizeCategory(item.categoria);
           let badgeColor = 'bg-red-100 text-red-800';
-          if (item.categoria === 'Aquilotti SMALL') badgeColor = 'bg-blue-100 text-blue-800';
+          if (displayCat === 'Aquilotti SMALL') badgeColor = 'bg-blue-100 text-blue-800';
 
           const surnameToPrint = (item.cognomeStampa || extractSurname(item.atleta)).toUpperCase();
           card.className = "jersey-card booked bg-slate-100 border border-slate-300 rounded-2xl p-4 flex flex-col items-center text-center relative overflow-hidden";
@@ -461,7 +469,7 @@
               </div>
             </div>
             <div class="w-full mt-2 pt-2 border-t border-slate-200">
-              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${badgeColor} mb-1">${item.categoria || 'Minibasket'}</span>
+              <span class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${badgeColor} mb-1">${displayCat}</span>
               <div class="text-xs font-extrabold text-asa-navy truncate px-1">${item.atleta}</div>
             </div>
           `;
@@ -623,9 +631,10 @@
       document.getElementById('admin-booked-count').innerText = bookedItems.length;
       list.innerHTML = bookedItems.length === 0 ? '<div class="p-4 text-center text-sm text-slate-500">Nessuna prenotazione</div>' : '';
       bookedItems.forEach(item => {
+        const displayCat = normalizeCategory(item.categoria);
         const row = document.createElement('div');
         row.className = "flex justify-between items-center p-3 text-sm";
-        row.innerHTML = `<div><span class="font-bold">N. ${item.numero}</span> - ${item.atleta} <span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${item.categoria || 'Minibasket'}</span></div><button onclick="releaseJersey('${item.id}')" class="text-red-600 font-bold text-xs underline cursor-pointer">Sblocca</button>`;
+        row.innerHTML = `<div><span class="font-bold">N. ${item.numero}</span> - ${item.atleta} <span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${displayCat}</span></div><button onclick="releaseJersey('${item.id}')" class="text-red-600 font-bold text-xs underline cursor-pointer">Sblocca</button>`;
         list.appendChild(row);
       });
     }
@@ -641,7 +650,7 @@
     function updateWhatsAppExportText() {
       const bookedItems = jerseysData.filter(i => i.booked && OFFICIAL_NUMBERS.includes(Number(i.numero))).sort((a,b) => a.numero - b.numero);
       let text = "🏀 *ASA BASKET CINISELLO - MINIBASKET*\n*Riepilogo Maglie Ufficiali*\n\n";
-      bookedItems.forEach(i => text += `• N. *${i.numero}* ➔ *${i.atleta}* (${i.categoria || 'N/D'})\n`);
+      bookedItems.forEach(i => text += `• N. *${i.numero}* ➔ *${i.atleta}* (${normalizeCategory(i.categoria)})\n`);
       document.getElementById('export-whatsapp-text').value = text;
     }
 
@@ -657,7 +666,8 @@
       bookedItems.forEach((item, index) => {
         const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString('it-IT') : "N/D";
         const surname = (item.cognomeStampa || extractSurname(item.atleta)).toUpperCase();
-        csvContent += `${index + 1};"${item.categoria || 'N/D'}";${item.numero};"${item.atleta}";"${surname}";"${dateStr}"\n`;
+        const displayCat = normalizeCategory(item.categoria);
+        csvContent += `${index + 1};"${displayCat}";${item.numero};"${item.atleta}";"${surname}";"${dateStr}"\n`;
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
